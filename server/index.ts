@@ -25,25 +25,41 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 // Endpoints
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Backend is running correctly' });
+    res.json({
+        status: 'ok',
+        message: 'Backend is running correctly',
+        env_configured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_KEY),
+        node_env: process.env.NODE_ENV
+    });
 });
 
 // Get all acupoints
 app.get('/api/acupoints', async (req, res) => {
     try {
+        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+            return res.status(500).json({ error: 'Database environment variables are missing on server.' });
+        }
+
         const { data, error } = await supabase
             .from('acupoints')
             .select('*');
 
         if (error) {
-            console.error('Error fetching acupoints:', error);
-            return res.status(500).json({ error: 'Failed to fetch acupoints' });
+            console.error('Supabase error:', error);
+            return res.status(500).json({
+                error: 'Failed to fetch acupoints',
+                details: error.message,
+                code: error.code
+            });
         }
 
         res.json(data);
     } catch (err) {
         console.error('Server error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({
+            error: 'Internal server error',
+            details: err instanceof Error ? err.message : String(err)
+        });
     }
 });
 
