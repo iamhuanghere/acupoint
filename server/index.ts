@@ -17,12 +17,13 @@ app.use(express.json());
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_KEY || '';
 
+// Use a fallback or lazy initialization if needed, but createClient must have strings.
+// Vercel environment variables should be provided as strings.
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 if (!supabaseUrl || !supabaseKey) {
     console.warn('Warning: SUPABASE_URL or SUPABASE_KEY is missing from environment variables.');
 }
-
-// Ensure createClient is called with valid strings or handled gracefully
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Endpoints
 app.get('/api/health', (req, res) => {
