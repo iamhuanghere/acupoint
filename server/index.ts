@@ -14,8 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'placeholder';
 
 // Use a fallback or lazy initialization if needed, but createClient must have strings.
 // Vercel environment variables should be provided as strings.
