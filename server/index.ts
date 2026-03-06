@@ -14,14 +14,15 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_KEY || '';
 
 if (!supabaseUrl || !supabaseKey) {
     console.warn('Warning: SUPABASE_URL or SUPABASE_KEY is missing from environment variables.');
 }
 
-const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+// Ensure createClient is called with valid strings or handled gracefully
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Endpoints
 app.get('/api/health', (req, res) => {
