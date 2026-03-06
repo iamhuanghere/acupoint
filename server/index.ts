@@ -74,12 +74,16 @@ app.get('/api/acupoints/:id', async (req, res) => {
     }
 });
 
-// Start the server
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-    if (supabaseUrl && supabaseKey) {
-        console.log(`Connected to Supabase at ${supabaseUrl}`);
-    } else {
-        console.log(`Supabase connection NOT configured. Please check .env file.`);
-    }
-});
+// Start the server natively only if not running on Vercel
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Server is running at http://localhost:${port}`);
+        if (supabaseUrl && supabaseKey) {
+            console.log(`Connected to Supabase at ${supabaseUrl}`);
+        } else {
+            console.log(`Supabase connection NOT configured. Please check .env file.`);
+        }
+    });
+}
+
+export default app;
