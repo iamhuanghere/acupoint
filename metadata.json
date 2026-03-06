@@ -1,0 +1,5 @@
+{
+  "name": "AcuPoint AI",
+  "description": "An intelligent acupoint encyclopedia with AR identification and therapeutic guides.",
+  "requestFramePermissions": ["camera"]
+}
