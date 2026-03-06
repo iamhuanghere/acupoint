@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI } from "@google/genai";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -24,6 +25,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 if (!supabaseUrl || !supabaseKey) {
     console.warn('Warning: SUPABASE_URL or SUPABASE_KEY is missing from environment variables.');
 }
+
+// Initialize Gemini AI
+const genAI = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY || ""
+});
 
 // Endpoints
 app.get('/api/health', (req, res) => {
@@ -60,6 +66,71 @@ app.get('/api/acupoints', async (req, res) => {
         console.error('Server error:', err);
         res.status(500).json({
             error: 'Internal server error',
+            details: err instanceof Error ? err.message : String(err)
+        });
+    }
+});
+
+// Analyze image for acupoints
+app.post('/api/analyze-image', async (req, res) => {
+    try {
+        const { image } = req.body; // base64 encoded image
+        if (!image) {
+            return res.status(400).json({ error: 'Image data is required' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Gemini API key is not configured' });
+        }
+
+        // Prompt for Gemini
+        const prompt = `
+            Analyze this photo of a human body part (hand, leg, ear, etc.). 
+            Identify all visible major acupoints in this image.
+            Return ONLY a JSON array of objects with the following structure:
+            [
+                { 
+                    "code": "LI4", 
+                    "name": "Hegu", 
+                    "description": "Located on the back of the hand...",
+                    "x": 0.45, 
+                    "y": 0.32 
+                }
+            ]
+            Where x and y are normalized coordinates (0 to 1) starting from top-left.
+            If no acupoints are recognizable, return an empty array [].
+            Do not include any Markdown formatting or extra text.
+        `;
+
+        // Prepare image data
+        const imageData = {
+            data: image.split(',')[1] || image,
+            mimeType: "image/jpeg"
+        };
+
+        const result = await genAI.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: prompt },
+                    { inlineData: imageData }
+                ]
+            }]
+        });
+
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "[]";
+
+        // Sanitize response (Gemini might sometimes include ```json ... ```)
+        const jsonMatch = text.match(/\[.*\]/s);
+        const jsonStr = jsonMatch ? jsonMatch[0] : text;
+        const points = JSON.parse(jsonStr);
+
+        res.json({ points });
+    } catch (err) {
+        console.error('Gemini Analysis error:', err);
+        res.status(500).json({
+            error: 'Failed to analyze image',
             details: err instanceof Error ? err.message : String(err)
         });
     }
